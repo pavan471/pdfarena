@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Compress PDF – PDFARENA</title>
+<meta name="viewport" content="width=device-width">
+<link rel="stylesheet" href="../assets/css/style.css">
+<script src="https://unpkg.com/pdf-lib/dist/pdf-lib.min.js"></script>
+</head>
+
+<body>
+<header class="header"><h1>Compress PDF</h1></header>
+
+<div class="tool-card">
+<input type="file" id="file" accept="application/pdf"><br><br>
+<select id="level">
+<option value="low">Low</option>
+<option value="medium" selected>Medium</option>
+<option value="high">High</option>
+</select><br><br>
+<button onclick="compress()">Compress</button>
+<p id="info"></p>
+<a id="download"></a>
+</div>
+
+<script>
+async function compress(){
+ const file=document.getElementById("file").files[0];
+ if(!file) return alert("Select PDF");
+
+ const before=file.size;
+ const pdf=await PDFLib.PDFDocument.load(await file.arrayBuffer());
+ const bytes=await pdf.save({compress:true});
+
+ const after=bytes.byteLength;
+ document.getElementById("info").innerHTML=
+ `Before: ${(before/1024/1024).toFixed(2)} MB<br>
+  After: ${(after/1024/1024).toFixed(2)} MB`;
+
+ const blob=new Blob([bytes],{type:"application/pdf"});
+ const a=document.getElementById("download");
+ a.href=URL.createObjectURL(blob);
+ a.download="compressed.pdf";
+ a.innerText="Download PDF";
+}
+</script>
+</body>
+</html>

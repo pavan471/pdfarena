@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Merge PDF – PDFARENA</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<link rel="stylesheet" href="../assets/css/style.css">
+<script src="https://unpkg.com/pdf-lib/dist/pdf-lib.min.js"></script>
+</head>
+
+<body>
+
+<header class="header">
+<h1>Merge PDF</h1>
+<p class="tagline">Combine multiple PDFs into one</p>
+</header>
+
+<main class="tool-grid">
+<div class="tool-card">
+
+<input type="file" id="files" multiple accept="application/pdf"><br><br>
+<button onclick="merge()">Merge PDFs</button>
+
+</div>
+</main>
+
+<footer class="footer">
+<p><a href="../index.html">← Back</a></p>
+</footer>
+
+<script>
+async function merge(){
+  const input=document.getElementById("files");
+  if(!input.files.length)return alert("Select PDFs");
+
+  const merged=await PDFLib.PDFDocument.create();
+
+  for(const f of input.files){
+    const pdf=await PDFLib.PDFDocument.load(await f.arrayBuffer());
+    const pages=await merged.copyPages(pdf,pdf.getPageIndices());
+    pages.forEach(p=>merged.addPage(p));
+  }
+
+  const blob=new Blob([await merged.save()],{type:"application/pdf"});
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download="merged.pdf";
+  a.click();
+}
+</script>
+
+</body>
+</html>
