@@ -1,47 +1,282 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>Compress PDF – PDFARENA</title>
-<meta name="viewport" content="width=device-width">
-<link rel="stylesheet" href="../assets/css/style.css">
+<meta charset="UTF-8">
+<title>Compress PDF Online – PDFARENA</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Compress PDF files online using PDFARENA. Drag & drop, secure, fast, and professional PDF compression.">
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+:root{
+  --primary:#4f46e5;
+  --secondary:#7c3aed;
+  --bg:#f9fafb;
+  --card:#ffffff;
+  --border:#e5e7eb;
+  --text:#111827;
+  --muted:#6b7280;
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family:Inter,system-ui,sans-serif;
+  background:var(--bg);
+  color:var(--text);
+}
+
+.header{
+  background:linear-gradient(135deg,var(--primary),var(--secondary));
+  color:#fff;
+  padding:50px 20px;
+  text-align:center;
+}
+
+.header h1{margin:0;font-size:2.4rem}
+.header p{opacity:.9}
+
+.container{
+  max-width:900px;
+  margin:-40px auto 40px;
+  padding:20px;
+}
+
+.card{
+  background:var(--card);
+  border-radius:16px;
+  padding:30px;
+  box-shadow:0 20px 40px rgba(0,0,0,.08);
+}
+
+.drop-zone{
+  border:2px dashed #c7d2fe;
+  background:#eef2ff;
+  border-radius:14px;
+  padding:40px;
+  text-align:center;
+  cursor:pointer;
+  transition:.25s;
+}
+
+.drop-zone.dragover{
+  background:#e0e7ff;
+  border-color:var(--primary);
+}
+
+.drop-zone h3{margin:10px 0 5px}
+.drop-zone p{color:var(--muted);font-size:14px}
+
+.hidden{display:none}
+
+.options{
+  margin-top:25px;
+  display:flex;
+  gap:20px;
+  flex-wrap:wrap;
+  align-items:center;
+}
+
+.options label{
+  font-size:14px;
+  color:var(--muted);
+}
+
+button{
+  background:linear-gradient(135deg,var(--primary),var(--secondary));
+  border:none;
+  color:#fff;
+  padding:14px 28px;
+  border-radius:10px;
+  font-size:16px;
+  cursor:pointer;
+}
+
+button:disabled{
+  opacity:.5;
+  cursor:not-allowed;
+}
+
+.stats{
+  display:flex;
+  gap:20px;
+  margin-top:25px;
+  flex-wrap:wrap;
+}
+
+.stat-box{
+  flex:1;
+  min-width:200px;
+  background:#f3f4f6;
+  padding:16px;
+  border-radius:12px;
+  text-align:center;
+}
+
+.stat-box h4{
+  margin:0;
+  font-size:13px;
+  color:var(--muted);
+}
+
+.stat-box p{
+  margin:8px 0 0;
+  font-size:18px;
+  font-weight:600;
+}
+
+.footer{
+  text-align:center;
+  padding:25px;
+  font-size:14px;
+  color:var(--muted);
+}
+</style>
+
 <script src="https://unpkg.com/pdf-lib/dist/pdf-lib.min.js"></script>
 </head>
 
 <body>
-<header class="header"><h1>Compress PDF</h1></header>
 
-<div class="tool-card">
-<input type="file" id="file" accept="application/pdf"><br><br>
-<select id="level">
-<option value="low">Low</option>
-<option value="medium" selected>Medium</option>
-<option value="high">High</option>
-</select><br><br>
-<button onclick="compress()">Compress</button>
-<p id="info"></p>
-<a id="download"></a>
+<header class="header">
+  <h1>Compress PDF</h1>
+  <p>Fast • Secure • Professional PDF Compression</p>
+</header>
+
+<div class="container">
+<div class="card">
+
+  <!-- DROP ZONE -->
+  <div id="dropZone" class="drop-zone">
+    <div style="font-size:46px">📄</div>
+    <h3>Drag & Drop PDF here</h3>
+    <p>or click to browse</p>
+    <input type="file" id="fileInput" accept="application/pdf" hidden>
+  </div>
+
+  <!-- OPTIONS -->
+  <div class="options">
+    <label>
+      <input type="checkbox" id="serverMode">
+      Use server-side heavy compression
+    </label>
+
+    <button id="compressBtn" disabled>Compress PDF</button>
+  </div>
+
+  <!-- STATS -->
+  <div id="stats" class="stats hidden">
+    <div class="stat-box">
+      <h4>Original Size</h4>
+      <p id="beforeSize">–</p>
+    </div>
+    <div class="stat-box">
+      <h4>Compressed Size</h4>
+      <p id="afterSize">–</p>
+    </div>
+  </div>
+
+  <!-- DOWNLOAD -->
+  <div id="downloadBox" class="hidden" style="margin-top:25px;text-align:center">
+    <a id="downloadLink">
+      <button>Download Compressed PDF</button>
+    </a>
+  </div>
+
+</div>
 </div>
 
+<footer class="footer">
+  © 2025 <strong>PDFARENA</strong> ·
+  <a href="../index.html">Back to Home</a>
+</footer>
+
 <script>
-async function compress(){
- const file=document.getElementById("file").files[0];
- if(!file) return alert("Select PDF");
+const dropZone=document.getElementById("dropZone");
+const fileInput=document.getElementById("fileInput");
+const compressBtn=document.getElementById("compressBtn");
+const serverMode=document.getElementById("serverMode");
 
- const before=file.size;
- const pdf=await PDFLib.PDFDocument.load(await file.arrayBuffer());
- const bytes=await pdf.save({compress:true});
+const stats=document.getElementById("stats");
+const beforeSize=document.getElementById("beforeSize");
+const afterSize=document.getElementById("afterSize");
+const downloadBox=document.getElementById("downloadBox");
+const downloadLink=document.getElementById("downloadLink");
 
- const after=bytes.byteLength;
- document.getElementById("info").innerHTML=
- `Before: ${(before/1024/1024).toFixed(2)} MB<br>
-  After: ${(after/1024/1024).toFixed(2)} MB`;
+let selectedFile=null;
 
- const blob=new Blob([bytes],{type:"application/pdf"});
- const a=document.getElementById("download");
- a.href=URL.createObjectURL(blob);
- a.download="compressed.pdf";
- a.innerText="Download PDF";
+dropZone.onclick=()=>fileInput.click();
+
+dropZone.ondragover=e=>{
+  e.preventDefault();
+  dropZone.classList.add("dragover");
+};
+dropZone.ondragleave=()=>dropZone.classList.remove("dragover");
+dropZone.ondrop=e=>{
+  e.preventDefault();
+  dropZone.classList.remove("dragover");
+  handleFile(e.dataTransfer.files[0]);
+};
+
+fileInput.onchange=()=>handleFile(fileInput.files[0]);
+
+function handleFile(file){
+  if(!file||file.type!=="application/pdf"){
+    alert("Please select a valid PDF file");
+    return;
+  }
+  selectedFile=file;
+  compressBtn.disabled=false;
 }
+
+compressBtn.onclick=async()=>{
+  if(!selectedFile)return;
+
+  compressBtn.disabled=true;
+  stats.classList.add("hidden");
+  downloadBox.classList.add("hidden");
+
+  const before=selectedFile.size;
+  let bytes;
+
+  if(serverMode.checked){
+    const formData=new FormData();
+    formData.append("pdf",selectedFile);
+
+    const res=await fetch(
+      ""https://pdfarena-backend-production.up.railway.app/compress",
+      {method:"POST",body:formData}
+    );
+
+    if(!res.ok){
+      alert("Server compression failed");
+      compressBtn.disabled=false;
+      return;
+    }
+
+    const blob=await res.blob();
+    bytes=await blob.arrayBuffer();
+  }else{
+    const pdf=await PDFLib.PDFDocument.load(await selectedFile.arrayBuffer());
+    bytes=await pdf.save({compress:true});
+  }
+
+  const after=bytes.byteLength;
+
+  beforeSize.textContent=(before/1024/1024).toFixed(2)+" MB";
+  afterSize.textContent=(after/1024/1024).toFixed(2)+" MB";
+
+  stats.classList.remove("hidden");
+
+  const blob=new Blob([bytes],{type:"application/pdf"});
+  downloadLink.href=URL.createObjectURL(blob);
+  downloadLink.download="compressed.pdf";
+  downloadBox.classList.remove("hidden");
+
+  compressBtn.disabled=false;
+};
 </script>
+
 </body>
 </html>
